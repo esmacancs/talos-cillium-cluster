@@ -114,11 +114,10 @@ for i in "${!CP_IPS[@]}"; do
 
   wait_for_maintenance "$ip"
 
-  # Build per-node patch (only hostname + VIP interface)
+  # Build per-node patch (only VIP interface)
   cat > "/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml" <<EOF
 machine:
   network:
-    hostname: ${CLUSTER_NAME}-control-plane-${idx}
     interfaces:
       - deviceSelector:
           physical: true
@@ -126,6 +125,15 @@ machine:
         vip:
           ip: ${VIP}
 EOF
+
+  # Reboot to clear any partial config from a previous run
+  virsh_name=$(virsh list --name 2>/dev/null | grep -i "${CLUSTER_NAME}-control-plane-${idx}")
+  if [ -n "$virsh_name" ]; then
+    info "Rebooting $virsh_name to clear partial state ..."
+    virsh reboot "$virsh_name" 2>/dev/null || true
+    sleep 30
+    wait_for_maintenance "$ip"
+  fi
 
   info "Applying config to control-plane node $idx ($ip) ..."
   talosctl -n "$ip" apply-config --insecure \
