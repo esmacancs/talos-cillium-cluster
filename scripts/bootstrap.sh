@@ -104,6 +104,15 @@ else
   info "cilium CLI already installed: $(cilium version --client 2>/dev/null | head -1)"
 fi
 
+# ── 11. Download Talos ISO upfront ─────────────────────────────────────────
+ISO_PATH="${ISO_PATH:-/tmp/metal-amd64.iso}"
+if [ ! -f "$ISO_PATH" ]; then
+  info "Downloading Talos ISO to $ISO_PATH ..."
+  wget --progress=bar:force "https://github.com/siderolabs/talos/releases/latest/download/metal-amd64.iso" -O "$ISO_PATH" || \
+    curl -fL -o "$ISO_PATH" "https://github.com/siderolabs/talos/releases/latest/download/metal-amd64.iso" || \
+    warn "ISO download failed — will retry during 'vagrant up'"
+fi
+
 info "── Bootstrap complete ───────────────────────────────────────────────"
 info "Log out and back in for group changes to take effect."
 info "Then run: vagrant up --provider=libvirt"

@@ -21,7 +21,18 @@ SUBNET="${SUBNET:-192.168.121}"
 VIP="${VIP:-${SUBNET}.100}"
 INSTALL_DISK="${INSTALL_DISK:-/dev/vda}"
 TALOS_VERSION="${TALOS_VERSION:-v1.9.5}"
+ISO_PATH="${ISO_PATH:-/tmp/metal-amd64.iso}"
 export TALOSCONFIG="${TALOSCONFIG:-$(pwd)/talosconfig}"
+
+# Ensure ISO is downloaded
+if [ ! -f "$ISO_PATH" ]; then
+  info "Downloading Talos ISO to $ISO_PATH ..."
+  wget --progress=bar:force "https://github.com/siderolabs/talos/releases/latest/download/metal-amd64.iso" -O "$ISO_PATH" || \
+    curl -fL -o "$ISO_PATH" "https://github.com/siderolabs/talos/releases/latest/download/metal-amd64.iso" || {
+      err "Failed to download Talos ISO"
+      exit 1
+    }
+fi
 
 # ─── 1. Get VM IPs from virsh ──────────────────────────────────────────────
 info "Discovering VM IPs ..."
