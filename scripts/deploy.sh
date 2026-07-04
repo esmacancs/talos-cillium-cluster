@@ -64,8 +64,8 @@ wait_for_maintenance() {
   local max=30
   info "Waiting for node $ip to reach maintenance mode ..."
   for i in $(seq 1 $max); do
-    if talosctl -n "$ip" version --insecure --short 2>/dev/null \
-       | grep -q Talos; then
+    if talosctl -n "$ip" version --insecure 2>/dev/null \
+       | grep -q "Server:"; then
       info "Node $ip ready in maintenance mode."
       return 0
     fi
