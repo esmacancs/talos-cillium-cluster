@@ -104,24 +104,16 @@ else
   info "cilium CLI already installed: $(cilium version --client 2>/dev/null | head -1)"
 fi
 
-# ── 11. Configure host as NTP server for VMs ──────────────────────────────────
-info "Setting up host as NTP server for VMs ..."
-if command -v timedatectl &>/dev/null; then
-  # Enable timesyncd to listen on all interfaces (allow LAN clients)
-  mkdir -p /etc/systemd/timesyncd.conf.d
-  cat > /etc/systemd/timesyncd.conf.d/allow-clients.conf <<'EOF'
-[Time]
-NTP=pool.ntp.org
-FallbackNTP=ntp.ubuntu.com
-EOF
-  systemctl enable --now systemd-timesyncd 2>/dev/null || true
-elif command -v chronyd &>/dev/null; then
-  # Allow chrony to serve time to LAN
-  if ! grep -q "allow 192.168.121" /etc/chrony/chrony.conf 2>/dev/null; then
+# ── 11. Install and configure chrony as NTP server for VMs ───────────────────
+info "Setting up host as NTP server (chrony) for VMs ..."
+apt-get install -y -qq chrony
+# Allow libvirt subnet to query this host for time
+if ! grep -q "allow 192.168.121" /etc/chrony/chrony.conf 2>/dev/null; then
+  sed -i 's/^#allow.*/allow 192.168.121.0\/24/' /etc/chrony/chrony.conf 2>/dev/null || \
     echo "allow 192.168.121.0/24" >> /etc/chrony/chrony.conf
-    systemctl restart chrony || true
-  fi
 fi
+systemctl enable --now chrony || true
+chronyc reload 2>/dev/null || true
 
 # ── 12. Download Talos ISO upfront ────────────────────────────────────────────
 ISO_PATH="${ISO_PATH:-/tmp/metal-amd64.iso}"
