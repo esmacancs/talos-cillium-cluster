@@ -80,7 +80,7 @@ fi
 # ─── Helper: wait for Talos maintenance mode on a node ─────────────────────
 wait_for_maintenance() {
   local ip=$1
-  local max=30
+  local max=20
   info "Waiting for node $ip to reach maintenance mode ..."
   for i in $(seq 1 $max); do
     output=$(talosctl -n "$ip" version --insecure 2>&1 || true)
@@ -93,7 +93,12 @@ wait_for_maintenance() {
     fi
     sleep 10
   done
-  err "Node $ip did NOT reach maintenance mode in ${max}x10s."
+  # Check if node is already configured (not in maintenance)
+  if talosctl -n "$ip" version 2>&1 | grep -q "Server:"; then
+    info "Node $ip is already configured — skipping."
+    return 1
+  fi
+  err "Node $ip not reachable in maintenance or configured state."
   exit 1
 }
 
@@ -152,7 +157,10 @@ for i in "${!CP_IPS[@]}"; do
   ip="${CP_IPS[$i]}"
   idx=$((i + 1))
 
-  wait_for_maintenance "$ip"
+  if ! wait_for_maintenance "$ip"; then
+    info "Skipping already-configured node $ip."
+    continue
+  fi
 
   # Build per-node patch (only VIP interface)
   cat > "/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml" <<EOF
@@ -172,13 +180,28 @@ EOF
     info "Rebooting $virsh_name to clear partial state ..."
     virsh reboot "$virsh_name" 2>/dev/null || true
     sleep 30
-    wait_for_maintenance "$ip"
+    if ! wait_for_maintenance "$ip"; then
+      info "Skipping node $ip."
+      continue
+    fi
   fi
 
   info "Applying config to control-plane node $idx ($ip) ..."
-  talosctl -n "$ip" apply-config --insecure \
-    --file controlplane.yaml \
-    --config-patch @"/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml"
+  for attempt in 1 2 3; do
+    if talosctl -n "$ip" apply-config --insecure \
+      --file controlplane.yaml \
+      --config-patch @"/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml" 2>/dev/null; then
+      info "Config applied to CP node $idx."
+      break
+    fi
+    if [ "$attempt" -lt 3 ]; then
+      warn "Attempt $attempt failed for $ip, retrying in 15s ..."
+      sleep 15
+    else
+      err "Failed to apply config to $ip after 3 attempts."
+      exit 1
+    fi
+  done
 done
 
 # ─── 4. Wait for NTP sync (via NTP server VM), then bootstrap etcd ──────
