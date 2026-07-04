@@ -38,16 +38,16 @@ fi
 info "Discovering VM IPs ..."
 get_vm_ips() {
   local pattern="$1"
-  virsh list --name 2>/dev/null | grep "$pattern" | while read -r name; do
+  virsh list --name 2>/dev/null | grep -i "$pattern" | while read -r name; do
     virsh domifaddr "$name" 2>/dev/null \
       | grep ipv4 | awk '{print $4}' | cut -d/ -f1
   done | sort -u
 }
 
 CP_IPS=()
-mapfile -t CP_IPS < <(get_vm_ips "vagrant_${CLUSTER_NAME}-control-plane")
+mapfile -t CP_IPS < <(get_vm_ips "${CLUSTER_NAME}-control-plane")
 WORKER_IPS=()
-mapfile -t WORKER_IPS < <(get_vm_ips "vagrant_${CLUSTER_NAME}-worker")
+mapfile -t WORKER_IPS < <(get_vm_ips "${CLUSTER_NAME}-worker")
 
 if [[ ${#CP_IPS[@]} -eq 0 ]]; then
   err "No control-plane VMs found. Run: vagrant up --provider=libvirt"
