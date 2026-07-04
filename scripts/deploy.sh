@@ -58,6 +58,25 @@ info "Control-plane IPs: ${CP_IPS[*]}"
 info "Worker IPs:        ${WORKER_IPS[*]:-(none)}"
 FIRST_CP="${CP_IPS[0]}"
 
+# ─── Detect NTP server VM IP ───────────────────────────────────────────────
+NTP_IPS=()
+mapfile -t NTP_IPS < <(get_vm_ips "ntp-server")
+if [ ${#NTP_IPS[@]} -gt 0 ]; then
+  NTP_SERVER="${NTP_IPS[0]}"
+  info "NTP server VM IP: $NTP_SERVER"
+  # Wait for NTP VM to get an IP and be reachable
+  for i in $(seq 1 15); do
+    if ping -c1 -W1 "$NTP_SERVER" &>/dev/null; then
+      info "NTP server VM is reachable."
+      break
+    fi
+    sleep 5
+  done
+else
+  NTP_SERVER="${NTP_SERVER:-192.168.121.1}"
+  warn "No NTP server VM found, using $NTP_SERVER as fallback."
+fi
+
 # ─── Helper: wait for Talos maintenance mode on a node ─────────────────────
 wait_for_maintenance() {
   local ip=$1
@@ -162,8 +181,8 @@ EOF
     --config-patch @"/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml"
 done
 
-# ─── 4. Wait for NTP sync, then bootstrap etcd on first control plane ────
-info "Waiting for NTP sync on $FIRST_CP ..."
+# ─── 4. Wait for NTP sync (via NTP server VM), then bootstrap etcd ──────
+info "Waiting for NTP sync on $FIRST_CP (via $NTP_SERVER) ..."
 for i in $(seq 1 36); do
   if talosctl -n "$FIRST_CP" time 2>&1 | grep -q "synchronized"; then
     info "NTP sync OK on $FIRST_CP."

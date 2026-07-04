@@ -104,16 +104,14 @@ else
   info "cilium CLI already installed: $(cilium version --client 2>/dev/null | head -1)"
 fi
 
-# ── 11. Install and configure chrony as NTP server for VMs ───────────────────
-info "Setting up host as NTP server (chrony) for VMs ..."
-apt-get install -y -qq chrony
-# Allow libvirt subnet to query this host for time
-if ! grep -q "allow 192.168.121" /etc/chrony/chrony.conf 2>/dev/null; then
-  sed -i 's/^#allow.*/allow 192.168.121.0\/24/' /etc/chrony/chrony.conf 2>/dev/null || \
-    echo "allow 192.168.121.0/24" >> /etc/chrony/chrony.conf
+# ── 11. Pre-download Ubuntu box for NTP server VM ─────────────────────────────
+info "Pre-downloading Ubuntu 24.04 box for NTP server VM ..."
+if ! vagrant box list | grep -q "generic/ubuntu2404"; then
+  vagrant box add generic/ubuntu2404 --provider libvirt 2>/dev/null || \
+    warn "Could not pre-download ubuntu box — will download during 'vagrant up'"
+else
+  info "Ubuntu box already present."
 fi
-systemctl enable --now chrony || true
-chronyc reload 2>/dev/null || true
 
 # ── 12. Download Talos ISO upfront ────────────────────────────────────────────
 ISO_PATH="${ISO_PATH:-/tmp/metal-amd64.iso}"

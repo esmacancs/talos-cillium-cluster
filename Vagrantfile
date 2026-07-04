@@ -24,11 +24,22 @@ end
 
 # ─── Vagrant Configuration ──────────────────────────────────────────────────
 Vagrant.configure("2") do |config|
-  # No base box — Talos boots directly from the ISO via CD-ROM
   config.vm.provider :libvirt do |libvirt|
     libvirt.driver = "kvm"
     libvirt.connect_via_ssh = false
     libvirt.qemu_use_session = false
+  end
+
+  # ── NTP Server (Ubuntu VM with chrony) ─────────────────────────────────
+  config.vm.define "ntp-server" do |ntp|
+    ntp.vm.box = "generic/ubuntu2404"
+    ntp.vm.hostname = "ntp-server"
+    ntp.vm.provider :libvirt do |domain|
+      domain.memory = 512
+      domain.cpus   = 1
+      domain.management_network_mac = "52:54:00:aa:bb:01"
+    end
+    ntp.vm.provision "shell", path: "scripts/setup-ntp-server.sh"
   end
 
   # ── Control Plane Nodes ────────────────────────────────────────────────
