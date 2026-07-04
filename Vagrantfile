@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
 
   # ── NTP Server (Ubuntu VM with chrony) ─────────────────────────────────
   config.vm.define "ntp-server" do |ntp|
-    ntp.vm.box = "generic/ubuntu2404"
+    ntp.vm.box = "bento/ubuntu-24.04"
     ntp.vm.hostname = "ntp-server"
     ntp.vm.provider :libvirt do |domain|
       domain.memory = 512

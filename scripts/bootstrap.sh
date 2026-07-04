@@ -107,11 +107,12 @@ fi
 
 # ── 11. Pre-download Ubuntu box for NTP server VM ─────────────────────────────
 info "Pre-downloading Ubuntu 24.04 box for NTP server VM ..."
-if ! vagrant box list | grep -q "generic/ubuntu2404"; then
-  vagrant box add generic/ubuntu2404 --provider libvirt 2>/dev/null || \
+UBUNTU_BOX="bento/ubuntu-24.04"
+if ! vagrant box list | grep -q "bento/ubuntu-24.04"; then
+  vagrant box add "$UBUNTU_BOX" --provider libvirt 2>/dev/null || \
     warn "Could not pre-download ubuntu box — will download during 'vagrant up'"
 else
-  info "Ubuntu box already present."
+  info "Ubuntu box already present: $UBUNTU_BOX"
 fi
 
 # ── 12. Download Talos ISO upfront ────────────────────────────────────────────
