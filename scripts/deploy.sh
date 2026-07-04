@@ -78,7 +78,22 @@ wait_for_maintenance() {
   exit 1
 }
 
-# ─── 2. Generate cluster config (with expanded vars) ─────────────────────────
+# ─── 2. Detect host NTP server (the VM gateway / host machine) ──────────────
+NTP_SERVER="${NTP_SERVER:-}"
+if [ -z "$NTP_SERVER" ]; then
+  # Use the libvirt network gateway as NTP server (the host machine)
+  NTP_SERVER=$(ip route show default 2>/dev/null | awk '{print $3}' || echo "")
+  if [ -z "$NTP_SERVER" ]; then
+    # Fallback: check virsh network
+    NTP_SERVER=$(virsh net-dhcp-leases default 2>/dev/null | head -1 | awk '{print $1}' | cut -d/ -f1 || echo "")
+  fi
+  if [ -z "$NTP_SERVER" ]; then
+    NTP_SERVER="192.168.121.1"
+  fi
+fi
+info "Using host as NTP server: $NTP_SERVER"
+
+# ─── 3. Generate cluster config (with expanded vars) ─────────────────────────
 info "Generating Talos configuration ..."
 rm -f talosconfig controlplane.yaml worker.yaml
 
@@ -87,10 +102,9 @@ cat > /tmp/cluster-full-patch.yaml <<EOF
 machine:
   time:
     disabled: false
-    bootTimeout: 30m
+    bootTimeout: 15m
     servers:
-      - pool.ntp.org
-      - time.cloudflare.com
+      - ${NTP_SERVER}
 cluster:
   network:
     cni:
