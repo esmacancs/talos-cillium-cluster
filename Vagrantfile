@@ -31,6 +31,11 @@ Vagrant.configure("2") do |config|
     libvirt.qemu_use_session = false
   end
 
+  # Common KVM clock config for time sync from host
+  clock_utc = lambda do |domain|
+    domain.clock :offset => "utc"
+  end
+
   # ── Control Plane Nodes ────────────────────────────────────────────────
   (1..CONTROL_COUNT).each do |i|
     config.vm.define "#{CLUSTER_NAME}-control-plane-#{i}" do |node|
@@ -43,6 +48,7 @@ Vagrant.configure("2") do |config|
         domain.storage :file, :size => DISK_SIZE, :type => 'raw'
         domain.boot 'hd'
         domain.boot 'cdrom'
+        clock_utc.call(domain)
       end
     end
   end
@@ -59,6 +65,7 @@ Vagrant.configure("2") do |config|
         domain.storage :file, :size => DISK_SIZE, :type => 'raw'
         domain.boot 'hd'
         domain.boot 'cdrom'
+        clock_utc.call(domain)
       end
     end
   end

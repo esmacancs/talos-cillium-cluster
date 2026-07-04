@@ -84,6 +84,13 @@ rm -f talosconfig controlplane.yaml worker.yaml
 
 # Build a full patch with all cluster settings expanded
 cat > /tmp/cluster-full-patch.yaml <<EOF
+machine:
+  time:
+    disabled: false
+    bootTimeout: 30m
+    servers:
+      - pool.ntp.org
+      - time.cloudflare.com
 cluster:
   network:
     cni:
