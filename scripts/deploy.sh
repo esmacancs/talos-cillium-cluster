@@ -141,10 +141,20 @@ EOF
     --config-patch @"/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml"
 done
 
-# ─── 4. Bootstrap etcd on first control plane ─────────────────────────────
-info "Waiting for etcd to be ready on $FIRST_CP (up to 5 min) ..."
-sleep 60
+# ─── 4. Wait for NTP sync, then bootstrap etcd on first control plane ────
+info "Waiting for NTP sync on $FIRST_CP ..."
+for i in $(seq 1 36); do
+  if talosctl -n "$FIRST_CP" time 2>&1 | grep -q "synchronized"; then
+    info "NTP sync OK on $FIRST_CP."
+    break
+  fi
+  if [ "$i" -eq 36 ]; then
+    warn "NTP sync timeout — continuing anyway ..."
+  fi
+  sleep 10
+done
 
+info "Bootstrapping etcd on $FIRST_CP ..."
 talosctl -n "$FIRST_CP" bootstrap
 info "Bootstrap initiated on $FIRST_CP."
 
