@@ -34,6 +34,7 @@ Vagrant.configure("2") do |config|
   config.vm.define "ntp-server" do |ntp|
     ntp.vm.box = "bento/ubuntu-24.04"
     ntp.vm.hostname = "ntp-server"
+    ntp.vm.synced_folder ".", "/vagrant", disabled: true
     ntp.vm.provider :libvirt do |domain|
       domain.memory = 512
       domain.cpus   = 1
