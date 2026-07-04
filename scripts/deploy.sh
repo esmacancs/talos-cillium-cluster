@@ -78,13 +78,31 @@ wait_for_maintenance() {
   exit 1
 }
 
-# ─── 2. Generate cluster config ────────────────────────────────────────────
+# ─── 2. Generate cluster config (with expanded vars) ─────────────────────────
 info "Generating Talos configuration ..."
 rm -f talosconfig controlplane.yaml worker.yaml
 
+# Build a full patch with all cluster settings expanded
+cat > /tmp/cluster-full-patch.yaml <<EOF
+cluster:
+  network:
+    cni:
+      name: none
+  proxy:
+    disabled: true
+  allowSchedulingOnControlPlanes: ${ALLOW_SCHED_ON_CP}
+  apiServer:
+    certSANs:
+      - ${VIP}
+EOF
+
 talosctl gen config "$CLUSTER_NAME" "https://${VIP}:6443" \
   --install-disk "$INSTALL_DISK" \
-  --config-patch @config/cluster-patch.yaml
+  --config-patch @/tmp/cluster-full-patch.yaml
+
+# Remove auto-generated hostname from controlplane.yaml (we set it per-node)
+sed -i '/^  hostname:/d' controlplane.yaml 2>/dev/null || true
+sed -i '/^    hostname:/d' worker.yaml 2>/dev/null || true
 
 # Set talosconfig endpoints
 talosctl config endpoint "${CP_IPS[@]}"
@@ -96,7 +114,7 @@ for i in "${!CP_IPS[@]}"; do
 
   wait_for_maintenance "$ip"
 
-  # Create per-node patch with hostname + VIP
+  # Build per-node patch (only hostname + VIP interface)
   cat > "/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml" <<EOF
 machine:
   network:
@@ -107,11 +125,6 @@ machine:
         dhcp: true
         vip:
           ip: ${VIP}
-cluster:
-  allowSchedulingOnControlPlanes: ${ALLOW_SCHED_ON_CP}
-  apiServer:
-    certSANs:
-      - ${VIP}
 EOF
 
   info "Applying config to control-plane node $idx ($ip) ..."
