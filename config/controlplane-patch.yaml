@@ -1,0 +1,13 @@
+machine:
+  network:
+    interfaces:
+      - deviceSelector:
+          physical: true
+        dhcp: true
+        vip:
+          ip: ${VIP_IP}
+cluster:
+  allowSchedulingOnControlPlanes: ${ALLOW_SCHED_ON_CP}
+  apiServer:
+    certSANs:
+      - ${VIP_IP}

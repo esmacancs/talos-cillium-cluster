@@ -1,0 +1,60 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: playground
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: playground-nginx-service
+  namespace: playground
+  annotations:
+    cilium.io/lb-ipam-pool-name: "default-pool"
+spec:
+  type: LoadBalancer
+  selector:
+    app: playground-nginx-pod
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playground-nginx-app
+  namespace: playground
+spec:
+  selector:
+    matchLabels:
+      app: playground-nginx-pod
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: playground-nginx-pod
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx-playground-container
+          image: nginxinc/nginx-unprivileged:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
