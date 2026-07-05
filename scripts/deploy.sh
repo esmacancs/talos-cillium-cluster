@@ -333,8 +333,8 @@ if [[ "${1:-}" == "--cilium" ]]; then
   kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_httproutes.yaml
   kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_referencegrants.yaml
 
-  helm repo add cilium https://helm.cilium.io/
-  helm repo update
+  helm repo add cilium https://helm.cilium.io/ 2>/dev/null || helm repo update cilium
+  helm repo update 2>/dev/null || true
 
   cilium install \
     --helm-set=ipam.mode=kubernetes \
