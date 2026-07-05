@@ -157,10 +157,6 @@ machine:
       - name: iscsi_tcp
       - name: nbd
       - name: configfs
-  systemExtensions:
-    officialExtensions:
-      - siderolabs/iscsi-tools
-      - siderolabs/util-linux-tools
   kubelet:
     extraMounts:
       - destination: /var/mnt/longhorn
@@ -207,10 +203,6 @@ machine:
       - name: iscsi_tcp
       - name: nbd
       - name: configfs
-  systemExtensions:
-    officialExtensions:
-      - siderolabs/iscsi-tools
-      - siderolabs/util-linux-tools
   kubelet:
     extraMounts:
       - destination: /var/mnt/longhorn
