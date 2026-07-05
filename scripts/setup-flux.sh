@@ -72,6 +72,7 @@ flux bootstrap github \
   --path="clusters/default" \
   --personal \
   --network-policy=false \
+  --token-auth \
   2>&1
 
 # ─── 5. Wait for sync ──────────────────────────────────────────────────────

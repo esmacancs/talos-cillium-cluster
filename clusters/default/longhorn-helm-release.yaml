@@ -26,3 +26,4 @@ spec:
   values:
     defaultSettings:
       defaultDataPath: /var/mnt/longhorn
+      disableIscsiLikeCheck: true

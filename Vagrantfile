@@ -31,19 +31,6 @@ Vagrant.configure("2") do |config|
     libvirt.qemu_use_session = false
   end
 
-  # ── NTP Server (Ubuntu VM with chrony) ─────────────────────────────────
-  config.vm.define "ntp-server" do |ntp|
-    ntp.vm.box = "bento/ubuntu-24.04"
-    ntp.vm.hostname = "ntp-server"
-    ntp.vm.synced_folder ".", "/vagrant", disabled: true
-    ntp.vm.provider :libvirt do |domain|
-      domain.memory = 512
-      domain.cpus   = 1
-      domain.management_network_mac = "52:54:00:aa:bb:01"
-    end
-    ntp.vm.provision "shell", path: "scripts/setup-ntp-server.sh"
-  end
-
   # ── Control Plane Nodes ────────────────────────────────────────────────
   (1..CONTROL_COUNT).each do |i|
     config.vm.define "#{CLUSTER_NAME}-control-plane-#{i}" do |node|

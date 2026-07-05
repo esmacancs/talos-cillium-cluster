@@ -58,24 +58,10 @@ info "Control-plane IPs: ${CP_IPS[*]}"
 info "Worker IPs:        ${WORKER_IPS[*]:-(none)}"
 FIRST_CP="${CP_IPS[0]}"
 
-# ─── Detect NTP server VM IP ───────────────────────────────────────────────
-NTP_IPS=()
-mapfile -t NTP_IPS < <(get_vm_ips "ntp-server")
-if [ ${#NTP_IPS[@]} -gt 0 ]; then
-  NTP_SERVER="${NTP_IPS[0]}"
-  info "NTP server VM IP: $NTP_SERVER"
-  # Wait for NTP VM to get an IP and be reachable
-  for i in $(seq 1 15); do
-    if ping -c1 -W1 "$NTP_SERVER" &>/dev/null; then
-      info "NTP server VM is reachable."
-      break
-    fi
-    sleep 5
-  done
-else
-  NTP_SERVER="${NTP_SERVER:-192.168.121.1}"
-  warn "No NTP server VM found, using $NTP_SERVER as fallback."
-fi
+# ─── NTP server ──────────────────────────────────────────────────────────
+# Use the libvirt gateway (host) which now runs chrony
+NTP_SERVER="${NTP_SERVER:-192.168.121.1}"
+info "NTP server: $NTP_SERVER"
 
 # ─── Helper: wait for Talos maintenance mode on a node ─────────────────────
 wait_for_maintenance() {
@@ -83,6 +69,14 @@ wait_for_maintenance() {
   local max=20
   info "Waiting for node $ip to reach maintenance mode ..."
   for i in $(seq 1 $max); do
+    # Quick check: if node is already configured, skip maintenance wait
+    if output=$(talosctl -n "$ip" version 2>&1); then
+      if echo "$output" | grep -q "Server:"; then
+        info "Node $ip is already configured — skipping."
+        return 1
+      fi
+    fi
+    # Check for maintenance mode
     if output=$(talosctl -n "$ip" version --insecure 2>&1); then
       if echo "$output" | grep -q "Server:"; then
         info "Node $ip ready in maintenance mode."
@@ -94,29 +88,9 @@ wait_for_maintenance() {
     fi
     sleep 10
   done
-  # Check if node is already configured (not in maintenance)
-  if talosctl -n "$ip" version 2>&1 | grep -q "Server:"; then
-    info "Node $ip is already configured — skipping."
-    return 1
-  fi
   err "Node $ip not reachable in maintenance or configured state."
   exit 1
 }
-
-# ─── 2. Detect host NTP server (the VM gateway / host machine) ──────────────
-NTP_SERVER="${NTP_SERVER:-}"
-if [ -z "$NTP_SERVER" ]; then
-  # Use the libvirt network gateway as NTP server (the host machine)
-  NTP_SERVER=$(ip route show default 2>/dev/null | awk '{print $3}' || echo "")
-  if [ -z "$NTP_SERVER" ]; then
-    # Fallback: check virsh network
-    NTP_SERVER=$(virsh net-dhcp-leases default 2>/dev/null | head -1 | awk '{print $1}' | cut -d/ -f1 || echo "")
-  fi
-  if [ -z "$NTP_SERVER" ]; then
-    NTP_SERVER="192.168.121.1"
-  fi
-fi
-info "Using host as NTP server: $NTP_SERVER"
 
 # ─── 3. Generate cluster config (with expanded vars) ─────────────────────────
 info "Generating Talos configuration ..."
