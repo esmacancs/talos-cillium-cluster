@@ -336,19 +336,24 @@ if [[ "${1:-}" == "--cilium" ]]; then
   helm repo add cilium https://helm.cilium.io/ 2>/dev/null || helm repo update cilium
   helm repo update 2>/dev/null || true
 
-  cilium install --upgrade \
-    --helm-set=ipam.mode=kubernetes \
-    --helm-set=kubeProxyReplacement=true \
-    --helm-set=securityContext.capabilities.ciliumAgent="{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}" \
-    --helm-set=securityContext.capabilities.cleanCiliumState="{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}" \
-    --helm-set=cgroup.autoMount.enabled=false \
-    --helm-set=cgroup.hostRoot=/sys/fs/cgroup \
-    --helm-set=l2announcements.enabled=true \
-    --helm-set=externalIPs.enabled=true \
-    --set gatewayAPI.enabled=true \
-    --helm-set=devices=e+ \
+  CILIUM_HELM_SET=(
+    --helm-set=ipam.mode=kubernetes
+    --helm-set=kubeProxyReplacement=true
+    --helm-set=securityContext.capabilities.ciliumAgent="{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}"
+    --helm-set=securityContext.capabilities.cleanCiliumState="{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}"
+    --helm-set=cgroup.autoMount.enabled=false
+    --helm-set=cgroup.hostRoot=/sys/fs/cgroup
+    --helm-set=l2announcements.enabled=true
+    --helm-set=externalIPs.enabled=true
+    --set gatewayAPI.enabled=true
+    --helm-set=devices=e+
     --helm-set=operator.replicas=1
-
+  )
+  if cilium status --wait --wait-duration=10s 2>/dev/null; then
+    cilium upgrade "${CILIUM_HELM_SET[@]}"
+  else
+    cilium install "${CILIUM_HELM_SET[@]}"
+  fi
   cilium status --wait
 
   # Apply L2 announcement policy + IP pool (substitute shell variables first)
