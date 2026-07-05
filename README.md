@@ -166,11 +166,30 @@ This runs `scripts/deploy.sh --cilium` and performs these steps automatically:
 | 9    | Apply config to the worker node                                           |
 | 10   | Wait until all 4 nodes are `Ready`                                        |
 | 11   | Install Gateway API CRDs                                                  |
-| 12   | Install **Cilium** via Helm (kube-proxy replacement, L2 announcements)    |
+| 12   | Install **Cilium** via Cilium CLI (`cilium install`, wraps Helm)          |
 | 13   | Apply Cilium IP pool + L2 announcement policy                             |
 
 **Note:** The first time a control plane is configured without a CNI,
 it takes 5–10 minutes to settle. The script waits for this. Be patient.
+
+### Cilium Installation: Two-Stage Approach
+
+Cilium is installed in two stages for GitOps management:
+
+1. **Stage 1 — Bootstrap (`scripts/deploy.sh`)**:
+   - `cilium install` is called via the Cilium CLI, which internally invokes Helm
+   - Runs with kube-proxy replacement and L2 announcement features
+   - Installs Cilium 1.19.x into `kube-system` as a Helm release named `cilium`
+   - This provides immediate CNI functionality so the cluster can schedule workloads
+
+2. **Stage 2 — GitOps Adoption (`make setup-flux`)**:
+   - `make setup-flux` bootstraps FluxCD into the cluster
+   - A Flux `HelmRelease` manifest in `clusters/default/cilium-helm-release.yaml` references the same chart
+   - Flux adopts the existing Helm release (same name, same namespace) and takes over management
+   - On first reconcile, Flux upgrades Cilium to the version specified in the HelmRelease (e.g. 1.19.3 → 1.19.5)
+   - All subsequent Cilium version changes are managed by updating the HelmRelease YAML and pushing to git
+
+**Why not install directly via Flux?** The cluster has no CNI initially — pods (including Flux controllers) can't schedule until Cilium is running. The manual `cilium install` breaks this circular dependency.
 
 ### Step 7: Verify the cluster
 
@@ -294,7 +313,9 @@ make up && make deploy-cilium
 | `up`             | `vagrant up --provider=libvirt`                      |
 | `status`         | Show VM status + IPs                                 |
 | `deploy`         | Deploy Talos cluster (no CNI)                        |
-| `deploy-cilium`  | Deploy Talos + install Cilium                        |
+| `deploy-cilium`  | Deploy Talos + install Cilium (via Cilium CLI/Helm)  |
+| `setup-flux`     | Bootstrap FluxCD + adopt Cilium/longhorn via GitOps   |
+| `full-deploy`    | `up` + `deploy-cilium` + `setup-flux` (end-to-end)   |
 | `health`         | Show Talos health + kubectl get nodes                |
 | `kubeconfig`     | Print export commands for KUBECONFIG/TALOSCONFIG     |
 | `destroy`        | Destroy all VMs (keeps ISO)                          |
