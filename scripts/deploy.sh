@@ -124,6 +124,7 @@ rm -f talosconfig controlplane.yaml worker.yaml
 
 # Build a full patch with all cluster settings expanded
 LOCAL_MIRROR="${LOCAL_MIRROR:-192.168.121.1}"
+LONGHORN_ENABLED="${LONGHORN_ENABLED:-${LONGHORN:-false}}"
 cat > /tmp/cluster-full-patch.yaml <<EOF
 machine:
   time:
@@ -145,6 +146,25 @@ machine:
         endpoints:
           - http://${LOCAL_MIRROR}:5003
           - https://quay.io
+  kernel:
+    modules:
+      - name: iscsi_tcp
+      - name: nbd
+      - name: configfs
+  customization:
+    systemExtensions:
+      officialExtensions:
+        - siderolabs/iscsi-tools
+        - siderolabs/util-linux-tools
+  kubelet:
+    extraMounts:
+      - destination: /var/mnt/longhorn
+        type: bind
+        source: /var/mnt/longhorn
+        options:
+          - bind
+          - rshared
+          - rw
 cluster:
   network:
     cni:
@@ -176,6 +196,25 @@ machine:
     bootTimeout: 15m
     servers:
       - ${NTP_SERVER}
+  kernel:
+    modules:
+      - name: iscsi_tcp
+      - name: nbd
+      - name: configfs
+  customization:
+    systemExtensions:
+      officialExtensions:
+        - siderolabs/iscsi-tools
+        - siderolabs/util-linux-tools
+  kubelet:
+    extraMounts:
+      - destination: /var/mnt/longhorn
+        type: bind
+        source: /var/mnt/longhorn
+        options:
+          - bind
+          - rshared
+          - rw
 cluster:
   network:
     cni:

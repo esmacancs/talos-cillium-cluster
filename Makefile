@@ -42,6 +42,9 @@ deploy: ## Deploy Talos cluster (generate config, bootstrap, apply workers)
 deploy-cilium: ## Deploy Talos + install Cilium CNI
 	bash scripts/deploy.sh --cilium
 
+install-longhorn: ## Install Longhorn distributed storage (prerequisites baked into deploy)
+	bash scripts/install-longhorn.sh
+
 kubeconfig: ## Export paths for kubeconfig and talosconfig
 	$(eval KUBECONFIG:=$(shell pwd)/kubeconfig)
 	$(eval TALOSCONFIG:=$(shell pwd)/talosconfig)
