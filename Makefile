@@ -15,6 +15,7 @@ VIP          ?= $(SUBNET).100
 
 export CLUSTER_NAME CONTROL_COUNT WORKER_COUNT
 export CP_CPUS CP_MEMORY WORKER_CPUS WORKER_MEMORY DISK_SIZE SUBNET VIP
+export LONGHORN_DISK_SIZE
 
 # ─── Phony targets ────────────────────────────────────────────────────────────
 .PHONY: help bootstrap up deploy status down destroy clean

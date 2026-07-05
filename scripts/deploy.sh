@@ -20,7 +20,7 @@ ALLOW_SCHED_ON_CP="${ALLOW_SCHED_ON_CP:-false}"
 SUBNET="${SUBNET:-192.168.121}"
 VIP="${VIP:-${SUBNET}.100}"
 INSTALL_DISK="${INSTALL_DISK:-/dev/vda}"
-TALOS_VERSION="${TALOS_VERSION:-v1.9.5}"
+TALOS_VERSION="${TALOS_VERSION:-v1.13}"
 ISO_PATH="${ISO_PATH:-/tmp/metal-amd64.iso}"
 export TALOSCONFIG="${TALOSCONFIG:-$(pwd)/talosconfig}"
 
@@ -157,11 +157,10 @@ machine:
       - name: iscsi_tcp
       - name: nbd
       - name: configfs
-  customization:
-    systemExtensions:
-      officialExtensions:
-        - siderolabs/iscsi-tools
-        - siderolabs/util-linux-tools
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/iscsi-tools
+      - siderolabs/util-linux-tools
   kubelet:
     extraMounts:
       - destination: /var/mnt/longhorn
@@ -208,11 +207,10 @@ machine:
       - name: iscsi_tcp
       - name: nbd
       - name: configfs
-  customization:
-    systemExtensions:
-      officialExtensions:
-        - siderolabs/iscsi-tools
-        - siderolabs/util-linux-tools
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/iscsi-tools
+      - siderolabs/util-linux-tools
   kubelet:
     extraMounts:
       - destination: /var/mnt/longhorn
