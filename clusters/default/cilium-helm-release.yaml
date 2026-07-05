@@ -14,9 +14,6 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
-  dependsOn:
-    - name: gateway-api-crds
-      namespace: flux-system
   chart:
     spec:
       chart: cilium
