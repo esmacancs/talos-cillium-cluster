@@ -57,7 +57,8 @@ install-longhorn: ## Install Longhorn imperatively (deprecated — use setup-flu
 setup-flux: ## Bootstrap FluxCD + manage Cilium/Longhorn/resources via GitOps
 	bash scripts/setup-flux.sh
 
-full-deploy: ## Unattended full deploy: Talos + Cilium + FluxCD (everything)
+full-deploy: ## Unattended full deploy: VMs + Talos + Cilium + FluxCD (everything)
+	vagrant up --provider=libvirt
 	bash scripts/deploy.sh --cilium
 	bash scripts/setup-flux.sh
 
