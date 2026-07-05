@@ -6,6 +6,7 @@ metadata:
 spec:
   interval: 5m
   targetNamespace: longhorn-system
+  createNamespace: true
   install:
     remediation:
       retries: 3
