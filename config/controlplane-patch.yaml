@@ -1,13 +1,14 @@
 machine:
   network:
+    hostname: talos-control-plane
     interfaces:
       - deviceSelector:
           physical: true
         dhcp: true
         vip:
-          ip: ${VIP_IP}
+          ip: 192.168.121.100
 cluster:
-  allowSchedulingOnControlPlanes: ${ALLOW_SCHED_ON_CP}
+  allowSchedulingOnControlPlanes: false
   apiServer:
     certSANs:
-      - ${VIP_IP}
+      - 192.168.121.100
