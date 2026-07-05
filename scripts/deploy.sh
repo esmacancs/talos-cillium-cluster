@@ -293,32 +293,43 @@ EOF
   done
 done
 
-# ─── 4. Wait for NTP sync (via NTP server VM), then bootstrap etcd ──────
-info "Waiting for NTP sync on $FIRST_CP (via $NTP_SERVER) ..."
-for i in $(seq 1 36); do
+# ─── 4. Wait for first CP to finish installing + reboot, then bootstrap ────
+info "Waiting for $FIRST_CP to finish install and boot from disk ..."
+for i in $(seq 1 120); do
+  if talosctl -n "$FIRST_CP" version 2>&1 | grep -q "Server:"; then
+    info "$FIRST_CP is fully booted (attempt $i)."
+    break
+  fi
+  if [ "$i" -eq 120 ]; then
+    warn "Node not fully booted after 20 minutes — continuing ..."
+  fi
+  sleep 10
+done
+
+info "Waiting for NTP sync on $FIRST_CP ..."
+for i in $(seq 1 60); do
   if talosctl -n "$FIRST_CP" time &>/dev/null; then
     info "NTP sync OK on $FIRST_CP."
     break
   fi
-  if [ "$i" -eq 36 ]; then
+  if [ "$i" -eq 60 ]; then
     warn "NTP sync timeout — continuing anyway ..."
   fi
   sleep 10
 done
 
 info "Bootstrapping etcd on $FIRST_CP ..."
-for attempt in 1 2 3; do
+for attempt in $(seq 1 10); do
   if talosctl -n "$FIRST_CP" bootstrap 2>/dev/null; then
     info "Bootstrap initiated on $FIRST_CP."
     break
   fi
-  if [ "$attempt" -lt 3 ]; then
-    warn "Bootstrap attempt $attempt failed, retrying in 15s (time may not be synced yet) ..."
-    sleep 15
+  if [ "$attempt" -lt 10 ]; then
+    warn "Bootstrap attempt $attempt failed, retrying in 30s ..."
+    sleep 30
   else
-    warn "Bootstrap failed after 3 attempts; retrying one final time ..."
+    warn "Bootstrap failed after 10 attempts; retrying one final time ..."
     talosctl -n "$FIRST_CP" bootstrap
-    info "Bootstrap initiated on $FIRST_CP."
   fi
 done
 
