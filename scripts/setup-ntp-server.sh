@@ -33,4 +33,11 @@ EOF
 systemctl enable --now chrony
 chronyc reload 2>/dev/null || true
 
+# chrony sometimes fails to bind 0.0.0.0:123 on first start; restart to ensure it listens
+sleep 2
+if ! ss -tlnp 2>/dev/null | grep -q :123; then
+  systemctl restart chrony
+  sleep 1
+fi
+
 echo "NTP server ready on $(hostname -I | awk '{print $1}')"

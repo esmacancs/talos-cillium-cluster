@@ -83,12 +83,13 @@ wait_for_maintenance() {
   local max=20
   info "Waiting for node $ip to reach maintenance mode ..."
   for i in $(seq 1 $max); do
-    output=$(talosctl -n "$ip" version --insecure 2>&1 || true)
-    if echo "$output" | grep -q "Server:"; then
-      info "Node $ip ready in maintenance mode."
-      return 0
+    if output=$(talosctl -n "$ip" version --insecure 2>&1); then
+      if echo "$output" | grep -q "Server:"; then
+        info "Node $ip ready in maintenance mode."
+        return 0
+      fi
     fi
-    if [ "$i" -eq 1 ] && [ -z "$output" ]; then
+    if [ "$i" -eq 1 ] && [ -z "${output:-}" ]; then
       warn "Node $ip returned empty — retrying ..."
     fi
     sleep 10
@@ -209,7 +210,7 @@ done
 # ─── 4. Wait for NTP sync (via NTP server VM), then bootstrap etcd ──────
 info "Waiting for NTP sync on $FIRST_CP (via $NTP_SERVER) ..."
 for i in $(seq 1 36); do
-  if talosctl -n "$FIRST_CP" time 2>&1 | grep -q "synchronized"; then
+  if talosctl -n "$FIRST_CP" time &>/dev/null; then
     info "NTP sync OK on $FIRST_CP."
     break
   fi
@@ -220,8 +221,20 @@ for i in $(seq 1 36); do
 done
 
 info "Bootstrapping etcd on $FIRST_CP ..."
-talosctl -n "$FIRST_CP" bootstrap
-info "Bootstrap initiated on $FIRST_CP."
+for attempt in 1 2 3; do
+  if talosctl -n "$FIRST_CP" bootstrap 2>/dev/null; then
+    info "Bootstrap initiated on $FIRST_CP."
+    break
+  fi
+  if [ "$attempt" -lt 3 ]; then
+    warn "Bootstrap attempt $attempt failed, retrying in 15s (time may not be synced yet) ..."
+    sleep 15
+  else
+    warn "Bootstrap failed after 3 attempts; retrying one final time ..."
+    talosctl -n "$FIRST_CP" bootstrap
+    info "Bootstrap initiated on $FIRST_CP."
+  fi
+done
 
 # Wait for bootstrap to complete
 info "Waiting for cluster to become healthy ..."
@@ -239,16 +252,11 @@ for i in "${!WORKER_IPS[@]}"; do
 
   wait_for_maintenance "$ip"
 
-  cat > "/tmp/${CLUSTER_NAME}-worker-${idx}-patch.yaml" <<EOF
-machine:
-  network:
-    hostname: ${CLUSTER_NAME}-worker-${idx}
-EOF
+  # Use auto-generated hostname (no patch needed) to avoid conflict with HostnameConfig
 
   info "Applying config to worker node $idx ($ip) ..."
   talosctl -n "$ip" apply-config --insecure \
-    --file worker.yaml \
-    --config-patch @"/tmp/${CLUSTER_NAME}-worker-${idx}-patch.yaml"
+    --file worker.yaml
 done
 
 # ─── 7. Wait for all nodes to be Ready ─────────────────────────────────────
@@ -294,8 +302,12 @@ if [[ "${1:-}" == "--cilium" ]]; then
 
   cilium status --wait
 
-  # Apply L2 announcement policy + IP pool
-  kubectl apply -f manifests/
+  # Apply L2 announcement policy + IP pool (substitute shell variables first)
+  export CILIUM_IP_POOL_START="${CILIUM_IP_POOL_START:-192.168.121.160}"
+  export CILIUM_IP_POOL_STOP="${CILIUM_IP_POOL_STOP:-192.168.121.170}"
+  for f in manifests/*.yaml; do
+    sed 's/\${\([A-Z_]*\):-[^}]*}/\${\1}/g' "$f" | envsubst | kubectl apply -f -
+  done
 
   info "Cilium installed. Verify with: cilium status"
 fi
