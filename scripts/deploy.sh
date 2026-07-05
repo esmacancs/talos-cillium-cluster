@@ -188,9 +188,11 @@ EOF
 
   info "Applying config to control-plane node $idx ($ip) ..."
   for attempt in 1 2 3; do
-    if talosctl -n "$ip" apply-config --insecure \
+    output=$(talosctl -n "$ip" apply-config --insecure \
       --file controlplane.yaml \
-      --config-patch @"/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml" 2>/dev/null; then
+      --config-patch @"/tmp/${CLUSTER_NAME}-cp-${idx}-patch.yaml" 2>&1 || true)
+    echo "$output" | grep -v "^$" || true
+    if echo "$output" | grep -qi "applied"; then
       info "Config applied to CP node $idx."
       break
     fi
