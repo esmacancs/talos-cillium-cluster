@@ -1,0 +1,6 @@
+.env
+.vagrant/
+controlplane.yaml
+worker.yaml
+talosconfig
+kubeconfig

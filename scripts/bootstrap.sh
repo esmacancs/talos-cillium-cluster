@@ -124,6 +124,14 @@ if [ ! -f "$ISO_PATH" ]; then
     warn "ISO download failed — will retry during 'vagrant up'"
 fi
 
+# ── 13. Install flux CLI ─────────────────────────────────────────────────────
+if ! command -v flux &>/dev/null; then
+  info "Installing flux CLI ..."
+  curl -sL https://fluxcd.io/install.sh | bash
+else
+  info "flux CLI already installed: $(flux --version 2>/dev/null | head -1)"
+fi
+
 info "── Bootstrap complete ───────────────────────────────────────────────"
 info "Log out and back in for group changes to take effect."
 info "Then run: vagrant up --provider=libvirt"

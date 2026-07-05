@@ -125,6 +125,12 @@ rm -f talosconfig controlplane.yaml worker.yaml
 # Build a full patch with all cluster settings expanded
 LOCAL_MIRROR="${LOCAL_MIRROR:-192.168.121.1}"
 LONGHORN_ENABLED="${LONGHORN_ENABLED:-${LONGHORN:-false}}"
+LONGHORN_DISK_SIZE="${LONGHORN_DISK_SIZE:-}"
+
+DISKS_CONFIG=""
+if [ -n "$LONGHORN_DISK_SIZE" ]; then
+  DISKS_CONFIG=$'  disks:\n    - device: /dev/vdb\n      partitions:\n        - mountpoint: /var/mnt/longhorn\n          size: 0'
+fi
 cat > /tmp/cluster-full-patch.yaml <<EOF
 machine:
   time:
@@ -165,6 +171,7 @@ machine:
           - bind
           - rshared
           - rw
+${DISKS_CONFIG}
 cluster:
   network:
     cni:
@@ -215,6 +222,7 @@ machine:
           - bind
           - rshared
           - rw
+${DISKS_CONFIG}
 cluster:
   network:
     cni:
