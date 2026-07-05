@@ -23,6 +23,9 @@ help: ## Show this help
 bootstrap: ## [sudo] Install all prerequisites (Vagrant, talosctl, kubectl, etc.)
 	sudo bash scripts/bootstrap.sh
 
+registry-mirror: ## Start local container registry mirrors (speeds up image pulls)
+	bash scripts/setup-registry-mirror.sh
+
 up: ## Start VMs with vagrant-libvirt
 	vagrant up --provider=libvirt
 

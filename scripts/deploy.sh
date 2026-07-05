@@ -123,7 +123,53 @@ info "Generating Talos configuration ..."
 rm -f talosconfig controlplane.yaml worker.yaml
 
 # Build a full patch with all cluster settings expanded
+LOCAL_MIRROR="${LOCAL_MIRROR:-192.168.121.1}"
 cat > /tmp/cluster-full-patch.yaml <<EOF
+machine:
+  time:
+    disabled: false
+    bootTimeout: 15m
+    servers:
+      - ${NTP_SERVER}
+  registries:
+    mirrors:
+      ghcr.io:
+        endpoints:
+          - http://${LOCAL_MIRROR}:5001
+          - https://ghcr.io
+      registry.k8s.io:
+        endpoints:
+          - http://${LOCAL_MIRROR}:5002
+          - https://registry.k8s.io
+      quay.io:
+        endpoints:
+          - http://${LOCAL_MIRROR}:5003
+          - https://quay.io
+cluster:
+  network:
+    cni:
+      name: none
+  proxy:
+    disabled: true
+  allowSchedulingOnControlPlanes: ${ALLOW_SCHED_ON_CP}
+  apiServer:
+    certSANs:
+      - ${VIP}
+EOF
+
+# Remove mirror block from patch if registries are unreachable (cleans up output)
+MIRROR_PORTS=(5001 5002 5003)
+all_reachable=true
+for port in "${MIRROR_PORTS[@]}"; do
+  if ! timeout 2 bash -c "echo >/dev/tcp/${LOCAL_MIRROR}/${port}" 2>/dev/null; then
+    all_reachable=false
+    break
+  fi
+done
+if ! $all_reachable; then
+  info "Local registry mirrors not reachable at ${LOCAL_MIRROR}:{5001-5003} — skipping mirror config."
+  # Re-generate patch without mirrors
+  cat > /tmp/cluster-full-patch.yaml <<EOF
 machine:
   time:
     disabled: false
@@ -141,6 +187,9 @@ cluster:
     certSANs:
       - ${VIP}
 EOF
+else
+  info "Local registry mirrors reachable at ${LOCAL_MIRROR}:{5001-5003} — will cache image pulls."
+fi
 
 talosctl gen config "$CLUSTER_NAME" "https://${VIP}:6443" \
   --install-disk "$INSTALL_DISK" \
