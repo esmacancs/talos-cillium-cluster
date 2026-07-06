@@ -50,16 +50,24 @@ fi
 
 info "GitHub owner: $OWNER, repo: $REPO"
 
-# ─── 3. Commit Flux manifests if uncommitted ────────────────────────────────
+# ─── 3. Commit manifests if uncommitted ─────────────────────────────────────
+# clusters/default/ must be committed before flux bootstrap
 if git status --porcelain -- 'clusters/default/' 2>/dev/null | grep -q .; then
-  info "Committing Flux manifests to git ..."
+  info "Committing cluster manifests to git ..."
   git add -A 'clusters/default/'
-  git commit -m "flux: add cluster manifests" || warn "Nothing to commit (all already staged)."
+  git commit -m "flux: update cluster manifests" || warn "Nothing to commit (all already staged)."
 fi
 
-# Check if local is ahead of remote
+# infrastructure/ and apps/ should also be committed before reconciling
+if git status --porcelain -- 'infrastructure/' 'apps/' 2>/dev/null | grep -q .; then
+  info "Committing infrastructure and app manifests to git ..."
+  git add -A 'infrastructure/' 'apps/'
+  git commit -m "flux: update infrastructure and app manifests" || warn "Nothing to commit (all already staged)."
+fi
+
+# Push everything
 AHEAD=$(git rev-list --count @{upstream}..HEAD 2>/dev/null || echo "0")
-if [ "$AHEAD" -gt 0 ] || git status --porcelain -- 'clusters/default/' 2>/dev/null | grep -q .; then
+if [ "$AHEAD" -gt 0 ] || git status --porcelain 2>/dev/null | grep -q .; then
   info "Pushing to origin ..."
   git push origin HEAD
 fi
