@@ -8,7 +8,7 @@ spec:
     - name: cilium-gateway
       namespace: kube-system
   hostnames:
-    - kite.local
+    - kitedashboard.local
   rules:
     - backendRefs:
         - name: kite
