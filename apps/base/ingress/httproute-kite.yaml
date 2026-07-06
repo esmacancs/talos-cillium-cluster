@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kite
+  namespace: kube-system
+spec:
+  parentRefs:
+    - name: cilium-gateway
+      namespace: kube-system
+  hostnames:
+    - kite.local
+  rules:
+    - backendRefs:
+        - name: kite
+          port: 8080

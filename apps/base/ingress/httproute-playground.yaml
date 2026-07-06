@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: playground
+  namespace: playground
+spec:
+  parentRefs:
+    - name: cilium-gateway
+      namespace: kube-system
+  hostnames:
+    - playground.local
+  rules:
+    - backendRefs:
+        - name: playground-nginx-service
+          port: 80
