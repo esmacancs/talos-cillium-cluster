@@ -126,6 +126,11 @@ machine:
         endpoints:
           - http://${LOCAL_MIRROR}:5003
           - https://quay.io
+      factory.talos.dev:
+        endpoints:
+          - https://factory.talos.dev
+  install:
+    image: factory.talos.dev/installer/c9078f9419961640c712a8bf2bb9174933dfcf1da383fd8ea2b7dc21493f8bac:v1.13.4
   kernel:
     modules:
       - name: iscsi_tcp
@@ -172,6 +177,8 @@ machine:
     bootTimeout: 15m
     servers:
       - ${NTP_SERVER}
+  install:
+    image: factory.talos.dev/installer/c9078f9419961640c712a8bf2bb9174933dfcf1da383fd8ea2b7dc21493f8bac:v1.13.4
   kernel:
     modules:
       - name: iscsi_tcp
