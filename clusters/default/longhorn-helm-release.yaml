@@ -4,7 +4,6 @@ metadata:
   name: longhorn
   namespace: flux-system
 spec:
-  suspend: true
   interval: 5m
   targetNamespace: longhorn-system
   install:
