@@ -44,13 +44,19 @@ get_vm_ips() {
   done | sort -u
 }
 
-CP_IPS=()
-mapfile -t CP_IPS < <(get_vm_ips "${CLUSTER_NAME}-control-plane")
+# Wait up to 3 minutes for VM IPs to appear (VMs may still be booting)
+for wait_min in $(seq 1 18); do
+  CP_IPS=()
+  mapfile -t CP_IPS < <(get_vm_ips "${CLUSTER_NAME}-control-plane")
+  [[ ${#CP_IPS[@]} -gt 0 ]] && break
+  sleep 10
+done
+
 WORKER_IPS=()
 mapfile -t WORKER_IPS < <(get_vm_ips "${CLUSTER_NAME}-worker")
 
 if [[ ${#CP_IPS[@]} -eq 0 ]]; then
-  err "No control-plane VMs found. Run: vagrant up --provider=libvirt"
+  err "No control-plane VMs found after 3 minutes. Run: vagrant up --provider=libvirt"
   exit 1
 fi
 
