@@ -1,0 +1,42 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: weave-gitops
+  namespace: flux-system
+spec:
+  interval: 5m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: weave-gitops
+      sourceRef:
+        kind: HelmRepository
+        name: weave-gitops
+        namespace: flux-system
+      interval: 5m
+  values:
+    adminUser:
+      create: true
+      username: admin
+      createSecret: false
+      createClusterRole: true
+    rbac:
+      impersonationResourceNames:
+        - admin
+    service:
+      type: LoadBalancer
+      port: 9001
+      annotations:
+        io.cilium/lb-ipam-ips: 192.168.121.174
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
