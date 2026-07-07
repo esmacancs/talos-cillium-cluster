@@ -28,3 +28,5 @@ spec:
       defaultDataPath: /var/mnt/longhorn
       disableIscsiLikeCheck: true
       defaultReplicaCount: 1
+    persistence:
+      defaultClassReplicaCount: 1
