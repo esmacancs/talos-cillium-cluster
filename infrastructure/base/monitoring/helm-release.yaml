@@ -1,0 +1,61 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: flux-system
+spec:
+  interval: 5m
+  targetNamespace: monitoring
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  dependsOn:
+    - name: cilium
+      namespace: flux-system
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 5m
+  values:
+    grafana:
+      enabled: true
+      adminPassword: admin
+      service:
+        type: LoadBalancer
+        port: 3000
+        annotations:
+          io.cilium/lb-ipam-ips: 192.168.121.171
+    prometheus:
+      prometheusSpec:
+        serviceMonitorSelectorNilUsesHelmValues: false
+        retention: 7d
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 200m
+          limits:
+            memory: 2Gi
+            cpu: 1000m
+      service:
+        type: LoadBalancer
+        port: 9090
+        annotations:
+          io.cilium/lb-ipam-ips: 192.168.121.172
+    alertmanager:
+      enabled: true
+      service:
+        type: LoadBalancer
+        port: 9093
+        annotations:
+          io.cilium/lb-ipam-ips: 192.168.121.173
+    kubeStateMetrics:
+      enabled: true
+    nodeExporter:
+      enabled: true
