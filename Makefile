@@ -12,10 +12,12 @@ WORKER_MEMORY?= 1024
 DISK_SIZE    ?= 10G
 SUBNET       ?= 192.168.121
 VIP          ?= $(SUBNET).100
+DEPLOY_TIMEOUT ?= 40m
+FLUX_TIMEOUT   ?= 10m
 
 export CLUSTER_NAME CONTROL_COUNT WORKER_COUNT
 export CP_CPUS CP_MEMORY WORKER_CPUS WORKER_MEMORY DISK_SIZE SUBNET VIP
-export LONGHORN_DISK_SIZE
+export LONGHORN_DISK_SIZE DEPLOY_TIMEOUT FLUX_TIMEOUT
 
 # ─── Phony targets ────────────────────────────────────────────────────────────
 .PHONY: help bootstrap up deploy status down destroy clean
@@ -58,9 +60,19 @@ setup-flux: ## Bootstrap FluxCD + manage Cilium/Longhorn/resources via GitOps
 	bash scripts/setup-flux.sh
 
 full-deploy: ## Unattended full deploy: VMs + Talos + Cilium + FluxCD (everything)
+	@echo "=== Phase 1: VMs ==="
 	vagrant up --provider=libvirt
-	bash scripts/deploy.sh --cilium
-	bash scripts/setup-flux.sh
+	@echo ""
+	@echo "=== Phase 2: Talos + Cilium ==="
+	timeout $(DEPLOY_TIMEOUT) bash scripts/deploy.sh --cilium || \
+		echo "[WARN] deploy.sh exited with $$? (timeout: $(DEPLOY_TIMEOUT)) — check 'make status'"
+	@echo ""
+	@echo "=== Phase 3: FluxCD ==="
+	timeout $(FLUX_TIMEOUT) bash scripts/setup-flux.sh || \
+		echo "[WARN] setup-flux.sh exited with $$? (timeout: $(FLUX_TIMEOUT)) — run 'make setup-flux' to retry"
+	@echo ""
+	@echo "=== full-deploy complete ==="
+	@echo "Check status: make status && make health"
 
 # ─── Utilities ────────────────────────────────────────────────────────────────
 kubeconfig: ## Export paths for kubeconfig and talosconfig

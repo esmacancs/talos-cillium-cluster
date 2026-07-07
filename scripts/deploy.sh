@@ -389,7 +389,8 @@ if [[ "${1:-}" == "--cilium" ]]; then
   else
     cilium install "${CILIUM_HELM_SET[@]}"
   fi
-  cilium status --wait
+  cilium status --wait --wait-duration=10m || \
+    warn "Cilium not fully ready after 10m — continuing in background"
 
   # Apply L2 announcement policy + IP pool (substitute shell variables first)
   export CILIUM_IP_POOL_START="${CILIUM_IP_POOL_START:-192.168.121.160}"
