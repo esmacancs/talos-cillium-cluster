@@ -5,4 +5,6 @@ resources:
   - playground
   - l2-announcements
   - ingress
-  - weave-gitops
+  # weave-gitops removed — Helm repo (https://helm.gitops.weave.works) is
+  # behind Cloudflare and ghcr.io OCI returns 401 (private).
+  # Re-add if you have credentials: apps/base/weave-gitops/
