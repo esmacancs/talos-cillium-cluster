@@ -13,9 +13,8 @@ spec:
       retries: 3
   chart:
     spec:
-      chart: weave-gitops
       sourceRef:
-        kind: HelmRepository
+        kind: OCIRepository
         name: weave-gitops
         namespace: flux-system
       interval: 5m
