@@ -32,6 +32,9 @@ spec:
         port: 3000
         annotations:
           io.cilium/lb-ipam-ips: 192.168.121.171
+      persistence:
+        enabled: true
+        size: 10Gi
     prometheus:
       prometheusSpec:
         serviceMonitorSelectorNilUsesHelmValues: false
@@ -43,6 +46,14 @@ spec:
           limits:
             memory: 2Gi
             cpu: 1000m
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 50Gi
       service:
         type: LoadBalancer
         port: 9090
@@ -55,6 +66,15 @@ spec:
         port: 9093
         annotations:
           io.cilium/lb-ipam-ips: 192.168.121.173
+      alertmanagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 10Gi
     kubeStateMetrics:
       enabled: true
     nodeExporter:
