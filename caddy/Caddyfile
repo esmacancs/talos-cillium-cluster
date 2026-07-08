@@ -1,0 +1,39 @@
+{
+    email admin@example.com
+}
+
+
+# Kubernetes Gateway
+k8s.local {
+    reverse_proxy 192.168.121.175:80
+}
+
+
+# Grafana direct access
+grafana.local {
+    reverse_proxy 192.168.121.171:3000
+}
+
+
+# Hubble UI
+hubble.local {
+    reverse_proxy 192.168.121.162:80
+}
+
+
+# Playground through Cilium Gateway
+playground.local {
+    reverse_proxy 192.168.121.175:80
+}
+
+
+# Kite through Cilium Gateway
+kite.local {
+    reverse_proxy 192.168.121.175:80
+}
+
+
+# Radar through Cilium Gateway
+sarma.local {
+    reverse_proxy 192.168.121.175:80
+}

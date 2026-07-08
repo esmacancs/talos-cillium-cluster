@@ -372,3 +372,16 @@ make up && make deploy-cilium
 - [Creating a Talos cluster with Cilium CNI on Proxmox](https://unixorn.github.io/post/homelab/k8s/01-talos-with-cilium-cni-on-proxmox/)
 - [Talos Linux](https://www.siderolabs.com/talos-linux/)
 - [Cilium](https://cilium.io/)
+
+
+
+run caddy on host machine to access from local machine
+
+Add to local machine `/etc/hosts`:
+```
+10.0.170.11  sarma.local grafana.local hubble.local kite.local playground.local k8s.local
+```
+
+Then access `https://sarma.local`, `https://grafana.local`, etc.
+
+HTTPRoutes are managed via GitOps (Flux). Check `clusters/default/` for definitions.
