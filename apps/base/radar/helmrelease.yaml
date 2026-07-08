@@ -23,9 +23,11 @@ spec:
       retries: -1
   values:
     image:
-      repository: ghcr.io/skyhook-io/radar
-      tag: 1.8.1
+      repository: ghcr.io/esmacancs/sarma
+      tag: latest
       pullPolicy: IfNotPresent
+    imagePullSecrets:
+      - name: ghcr-pull
     service:
       type: LoadBalancer
     rbac:
