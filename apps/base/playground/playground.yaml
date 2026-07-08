@@ -70,6 +70,15 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: playground-nginx-app
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+    scaleUp:
+      stabilizationWindowSeconds: 0
   metrics:
     - type: Resource
       resource:
