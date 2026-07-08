@@ -385,3 +385,37 @@ Add to local machine `/etc/hosts`:
 Then access `https://sarma.local`, `https://grafana.local`, etc.
 
 HTTPRoutes are managed via GitOps (Flux). Check `clusters/default/` for definitions.
+
+
+## HPA (Horizontal Pod Autoscaling) — Testing Guide
+
+### Create HPA for playground
+
+```bash
+kubectl autoscale deployment playground-nginx-app -n playground --cpu-percent=20 --min=1 --max=5
+```
+
+### Watch HPA in real-time
+
+```bash
+kubectl get hpa -n playground -w
+```
+
+### Generate load to trigger scale-up
+
+```bash
+kubectl run -n playground load-gen --image=busybox --restart=Never \
+  -- /bin/sh -c "for i in \$(seq 10); do while true; do wget -q -O- http://playground-nginx-service &>/dev/null; done & done; wait"
+```
+
+Wait 1-2 minutes, then new pods will appear:
+
+```bash
+kubectl get pods -n playground -w
+```
+
+### Clean up
+
+```bash
+kubectl delete pod load-gen -n playground
+```
