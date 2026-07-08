@@ -1,0 +1,39 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sarma
+  namespace: flux-system
+spec:
+  interval: 5m
+  releaseName: radar
+  targetNamespace: radar
+  chart:
+    spec:
+      chart: radar
+      sourceRef:
+        kind: HelmRepository
+        name: skyhook
+        namespace: flux-system
+      version: 1.8.1
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    remediation:
+      retries: -1
+  values:
+    image:
+      repository: ghcr.io/esmacancs/sarma
+      tag: latest
+      pullPolicy: IfNotPresent
+    imagePullSecrets:
+      - name: ghcr-pull
+    service:
+      type: LoadBalancer
+    rbac:
+      portForward: true
+      podExec: true
+      secrets: true
+      traffic: true
+      metrics: true
+      podLogs: true
