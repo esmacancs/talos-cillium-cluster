@@ -419,3 +419,25 @@ kubectl get pods -n playground -w
 ```bash
 kubectl delete pod load-gen -n playground
 ```
+
+### How HPA scaling works
+
+HPA uses this formula to decide replicas:
+
+```
+desiredReplicas = ceil(currentReplicas × (currentUtilization / targetUtilization))
+```
+
+With `min=1, max=5, target=20%`:
+
+| Current CPU | Calculation | Desired replicas |
+|-------------|-------------|------------------|
+| 20% | `1 × (20/20)` = 1 | stays at 1 |
+| 41% | `1 × (41/20)` = 2.05 → ceil(2.05) = 3 | scales to 3 |
+| 61% | `3 × (61/20)` = 3.05 → ceil(3.05) = 4 | scales to 4 |
+| 90% | `4 × (90/20)` = 4.5 → capped at max(5) | stays at 5 |
+
+- **Scale up**: responds quickly (~15s metric window)
+- **Scale down**: waits ~5 minutes of sustained low CPU before reducing to prevent thrashing
+
+Example: if CPU drops to 5%, it waits ~5 min, then: `2 × (5/20)` = 0.5 → 1 replica.
