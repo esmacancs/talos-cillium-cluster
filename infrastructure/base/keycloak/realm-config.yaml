@@ -70,6 +70,7 @@ data:
           "frontchannelLogout": true,
           "secret": "kite-client-secret",
           "redirectUris": [
+            "http://kite.local/*",
             "https://kite.local/*",
             "http://localhost:8080/*"
           ],
