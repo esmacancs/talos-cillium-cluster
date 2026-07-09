@@ -45,9 +45,9 @@ spec:
             - --hostname=keycloak.local
             - --hostname-strict=false
           env:
-            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+            - name: KEYCLOAK_ADMIN
               value: admin
-            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+            - name: KEYCLOAK_ADMIN_PASSWORD
               value: admin
             - name: KC_DB
               value: postgres
