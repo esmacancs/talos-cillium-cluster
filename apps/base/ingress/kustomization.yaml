@@ -4,3 +4,4 @@ resources:
   - gateway.yaml
   - httproute-kite.yaml
   - httproute-playground.yaml
+  - httproute-keycloak.yaml

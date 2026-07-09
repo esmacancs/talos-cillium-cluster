@@ -6,3 +6,4 @@ resources:
   - monitoring
   - gateway-api
   - metrics-server
+  - keycloak

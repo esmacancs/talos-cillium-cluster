@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-kite
+  namespace: keycloak
+data:
+  kite-realm.json: |
+    {
+      "realm": "kite",
+      "displayName": "Kite",
+      "enabled": true,
+      "sslRequired": "none",
+      "roles": {
+        "realm": [
+          {
+            "name": "admin",
+            "description": "Kite administrator",
+            "composite": false,
+            "clientRole": false
+          },
+          {
+            "name": "viewer",
+            "description": "Read-only access",
+            "composite": false,
+            "clientRole": false
+          }
+        ]
+      },
+      "users": [
+        {
+          "username": "admin",
+          "enabled": true,
+          "email": "admin@kite.local",
+          "firstName": "Admin",
+          "lastName": "User",
+          "credentials": [{
+            "type": "password",
+            "value": "admin",
+            "temporary": false
+          }],
+          "realmRoles": ["admin"],
+          "groups": []
+        },
+        {
+          "username": "user",
+          "enabled": true,
+          "email": "user@kite.local",
+          "firstName": "Regular",
+          "lastName": "User",
+          "credentials": [{
+            "type": "password",
+            "value": "user",
+            "temporary": false
+          }],
+          "realmRoles": ["viewer"],
+          "groups": []
+        }
+      ],
+      "clients": [
+        {
+          "clientId": "kite",
+          "name": "Kite Dashboard",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": false,
+          "frontchannelLogout": true,
+          "secret": "kite-client-secret",
+          "redirectUris": [
+            "https://kite.local/*",
+            "http://localhost:8080/*"
+          ],
+          "webOrigins": ["+"],
+          "attributes": {
+            "post.logout.redirect.uris": "https://kite.local/*",
+            "access.token.lifespan": "3600"
+          },
+          "protocolMappers": [
+            {
+              "name": "groups",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "config": {
+                "claim.name": "groups",
+                "full.path": "false",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ]
+    }

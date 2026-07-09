@@ -33,6 +33,12 @@ kite.local {
 }
 
 
+# Keycloak through Cilium Gateway
+keycloak.local {
+    reverse_proxy 192.168.121.175:80
+}
+
+
 # Radar through Cilium Gateway
 sarma.local {
     reverse_proxy 192.168.121.175:80
