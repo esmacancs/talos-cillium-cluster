@@ -33,9 +33,9 @@ kite.local {
 }
 
 
-# Keycloak through Cilium Gateway
+# Keycloak direct (bypass Gateway to preserve X-Forwarded-Proto)
 keycloak.local {
-    reverse_proxy 192.168.121.175:80
+    reverse_proxy 192.168.121.163:8080
 }
 
 
