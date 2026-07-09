@@ -3,5 +3,4 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - realm-config.yaml
-  - helm-repository.yaml
-  - helm-release.yaml
+  - keycloak.yaml

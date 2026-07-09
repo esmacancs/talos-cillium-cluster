@@ -69,7 +69,7 @@ spec:
           name: kite
           env:
             - name: OIDC_ISSUER_URL
-              value: http://keycloak.keycloak.svc.cluster.local:8080/realms/kite
+              value: http://keycloak.local:80/realms/kite
             - name: OIDC_CLIENT_ID
               value: kite
             - name: OIDC_CLIENT_SECRET
