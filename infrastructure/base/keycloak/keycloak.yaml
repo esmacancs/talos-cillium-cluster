@@ -38,6 +38,7 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - start-dev
+            - --import-realm
             - --proxy=edge
             - --http-enabled=true
             - --http-port=8080
@@ -59,21 +60,18 @@ spec:
           ports:
             - containerPort: 8080
           startupProbe:
-            httpGet:
-              path: /health/live
+            tcpSocket:
               port: 8080
             initialDelaySeconds: 10
             failureThreshold: 60
             periodSeconds: 15
           livenessProbe:
-            httpGet:
-              path: /health/live
+            tcpSocket:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
-            httpGet:
-              path: /health/ready
+            tcpSocket:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
