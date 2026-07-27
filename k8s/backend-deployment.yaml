@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: domain-backend
+  namespace: hajeer-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: domain-backend
+  template:
+    metadata:
+      labels:
+        app: domain-backend
+    spec:
+      imagePullSecrets:
+        - name: odp-pull-secret
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nc -z domain-db 5432; do echo waiting for db; sleep 2; done
+        - name: run-migrations
+          image: registry.odp.om/csharma/coe/domain-backend:latest
+          command:
+            - sh
+            - -c
+            - npx prisma migrate deploy
+          envFrom:
+            - secretRef:
+                name: app-secrets
+      containers:
+        - name: backend
+          image: registry.odp.om/csharma/coe/domain-backend:latest
+          ports:
+            - containerPort: 4000
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: PORT
+              value: "4000"
+            - name: CORS_ORIGIN
+              value: "http://domain.local,http://domain-api.local,https://domain.local,https://domain-api.local,http://domain-frontend,http://localhost:3000,http://localhost:5173"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 15

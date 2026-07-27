@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: domain-frontend
+  namespace: hajeer-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: domain-frontend
+  template:
+    metadata:
+      labels:
+        app: domain-frontend
+    spec:
+      imagePullSecrets:
+        - name: odp-pull-secret
+      containers:
+        - name: frontend
+          image: registry.odp.om/csharma/coe/domain-frontend:latest
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: frontend-nginx-config

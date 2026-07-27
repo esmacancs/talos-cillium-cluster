@@ -43,3 +43,15 @@ keycloak.local {
 sarma.local {
     reverse_proxy 192.168.121.175:80
 }
+
+
+# Domain Auction Frontend through Cilium Gateway
+domain.local {
+    reverse_proxy 192.168.121.175:80
+}
+
+
+# Domain Auction Backend API through Cilium Gateway
+domain-api.local {
+    reverse_proxy 192.168.121.175:80
+}
