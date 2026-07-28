@@ -55,3 +55,9 @@ domain.local {
 domain-api.local {
     reverse_proxy 192.168.121.175:80
 }
+
+
+# ArgoCD through Cilium Gateway
+argocd.local {
+    reverse_proxy 192.168.121.175:80
+}
