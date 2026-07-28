@@ -57,7 +57,11 @@ domain-api.local {
 }
 
 
-# ArgoCD through Cilium Gateway
+# ArgoCD direct (bypass Gateway, ArgoCD requires HTTPS)
 argocd.local {
-    reverse_proxy 192.168.121.175:80
+    reverse_proxy https://10.104.78.207:443 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
 }
