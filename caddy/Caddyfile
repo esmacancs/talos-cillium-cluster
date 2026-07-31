@@ -57,11 +57,24 @@ domain-api.local {
 }
 
 
-# ArgoCD direct (bypass Gateway, ArgoCD requires HTTPS)
+# Domain Auction (mirrors prod: F5 terminates TLS, cluster sees HTTP)
+auction-platform.otech.om {
+    tls internal
+    reverse_proxy 192.168.121.175:80
+}
+
+auction-platform-api.otech.om {
+    tls internal
+    reverse_proxy 192.168.121.175:80
+}
+
+auth-auction-platform.otech.om {
+    tls internal
+    reverse_proxy 192.168.121.175:80
+}
+
+
+# ArgoCD through Cilium Gateway
 argocd.local {
-    reverse_proxy https://10.104.78.207:443 {
-        transport http {
-            tls_insecure_skip_verify
-        }
-    }
+    reverse_proxy 192.168.121.175:80
 }
