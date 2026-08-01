@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: keycloak-realm-kite
-  namespace: keycloak
+  namespace: flux-keycloak
 data:
   kite-realm.json: |
     {

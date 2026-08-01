@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: keycloak
-  namespace: keycloak
+  namespace: flux-keycloak
 spec:
   type: LoadBalancer
   selector:
@@ -16,7 +16,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: keycloak
-  namespace: keycloak
+  namespace: flux-keycloak
 spec:
   replicas: 1
   selector:
@@ -52,7 +52,7 @@ spec:
             - name: KC_DB
               value: postgres
             - name: KC_DB_URL
-              value: jdbc:postgresql://keycloak-postgresql.keycloak.svc.cluster.local:5432/keycloak
+              value: jdbc:postgresql://keycloak-postgresql.flux-keycloak.svc.cluster.local:5432/keycloak
             - name: KC_DB_USERNAME
               value: keycloak
             - name: KC_DB_PASSWORD
@@ -95,7 +95,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: keycloak-postgresql
-  namespace: keycloak
+  namespace: flux-keycloak
 spec:
   selector:
     app: keycloak-postgresql
@@ -107,7 +107,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: keycloak-postgresql
-  namespace: keycloak
+  namespace: flux-keycloak
 spec:
   replicas: 1
   selector:
