@@ -4,6 +4,4 @@ resources:
   - gateway.yaml
   - httproute-kite.yaml
   - httproute-playground.yaml
-  # httproute-keycloak removed: keycloak is managed by ArgoCD (auction-platform repo)
-  # production route: auth-auction-platform.otech.om via ArgoCD Ingress
-  # local keycloak.local access goes through Caddy → 192.168.121.163:8080 directly
+  - httproute-keycloak.yaml
