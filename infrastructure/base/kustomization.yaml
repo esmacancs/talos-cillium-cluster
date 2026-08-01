@@ -6,6 +6,4 @@ resources:
   - monitoring
   - gateway-api
   - metrics-server
-  # keycloak removed: managed by ArgoCD via auction-platform GitLab repo
-  # (infrastructure/base/keycloak/ was an old dev deployment conflicting
-  #  with the ArgoCD-managed Keycloak in the same namespace)
+  - keycloak
