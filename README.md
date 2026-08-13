@@ -461,3 +461,127 @@ Field	Value
 Keep the client id kite / secret kite-client-secret and the redirect URI https://kite.local/api/auth/callback.
 
 **Note**: if your current Token URL uses the old IP 192.168.121.163:8080, that's also dead now — same fix applies (use .165).
+
+---
+
+## Kite persistence — SQLite DB on a PVC
+
+Kite stores everything (users, OAuth providers, cluster connections, settings)
+in a single SQLite file. Without a PVC the DB lives in the container's writable
+layer, so **any pod restart / rollout wipes it**.
+
+### How persistence is configured
+
+Manifest: `apps/base/kite/deployment.yaml` (deployed via Flux from this repo).
+
+| Item              | Value                                   |
+|-------------------|-----------------------------------------|
+| PVC               | `kite-data` (kube-system, longhorn, RWO, 1Gi) |
+| Mount path        | `/data`                                 |
+| Env var           | `DB_DSN=/data/db.sqlite`                |
+
+The kite image is `gcr.io/distroless/static` — **no shell, no `tar`**, so
+`kubectl exec` / `kubectl cp` do not work. Use the Talos node instead.
+
+### Doing it for a brand-new deployment
+
+```bash
+git clone https://github.com/esmacancs/talos-cillium-cluster.git
+cd talos-cillium-cluster
+export KUBECONFIG=$PWD/kubeconfig
+export TALOSCONFIG=$PWD/talosconfig
+```
+
+1. Make sure `apps/base/kite/deployment.yaml` contains the PVC + `DB_DSN` env
+   + volume mount shown above. Push to git, then force Flux to apply:
+
+```bash
+kubectl annotate --overwrite -n flux-system gitrepository/flux-system fluxcd.io/reconcileAt="$(date -Iseconds)"
+kubectl annotate --overwrite -n flux-system kustomization/apps fluxcd.io/reconcileAt="$(date -Iseconds)"
+kubectl -n kube-system rollout status deploy/kite
+```
+
+2. On first start kite creates a fresh DB on the PVC (`/data/db.sqlite`).
+   Complete the setup wizard in the UI, then add your OAuth provider.
+
+### Migrating an existing deployment (no data loss)
+
+Use this when kite is already running without a PVC and you want to keep its DB.
+
+**Step 1 — find the DB file on the node**
+
+The default path (when `DB_DSN` is unset) is `dev.db` in the CWD, i.e.
+`/app/dev.db`. Get the container ID, then the container's PID from containerd:
+
+```bash
+CID=$(kubectl get pod -n kube-system -l app=kite -o jsonpath='{.items[0].status.containerStatuses[0].containerID}' | sed 's#containerd://##')
+# PID is the "Pid" field in the CRI status file
+talosctl --nodes <NODE-IP> read /var/lib/containerd/io.containerd.grpc.v1.cri/containers/$CID/status
+```
+
+**Step 2 — download the DB via /proc**
+
+```bash
+talosctl --nodes <NODE-IP> read /proc/<PID>/root/app/dev.db > /tmp/kite-dev.db
+file /tmp/kite-dev.db   # should say: SQLite 3.x database
+```
+
+**Step 3 — create the PVC and pre-populate it** (BEFORE the deployment rolls)
+
+```bash
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kite-data
+  namespace: kube-system
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 1Gi }
+EOF
+kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/kite-data -n kube-system
+
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kite-db-restore
+  namespace: kube-system
+spec:
+  restartPolicy: Never
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["sleep", "3600"]
+      volumeMounts: [{ name: kite-data, mountPath: /data }]
+  volumes:
+    - name: kite-data
+      persistentVolumeClaim: { claimName: kite-data }
+EOF
+kubectl wait --for=condition=Ready pod/kite-db-restore -n kube-system
+
+kubectl cp /tmp/kite-dev.db kube-system/kite-db-restore:/data/db.sqlite
+kubectl exec -n kube-system kite-db-restore -- md5sum /data/db.sqlite
+md5sum /tmp/kite-dev.db                      # both must match
+kubectl delete pod kite-db-restore -n kube-system
+```
+
+**Step 4 — rollout with the PVC + DB_DSN**
+
+Push the manifest change (PVC + `DB_DSN=/data/db.sqlite` + volume mount) to git,
+then force Flux to reconcile (same commands as "brand-new" above).
+
+**Step 5 — verify**
+
+```bash
+kubectl get pvc -n kube-system kite-data        # Bound
+kubectl logs -n kube-system deploy/kite --tail=20
+```
+
+Logs must show `Loaded K8s client for cluster: admin@talos` (proves the saved
+DB data is being used). Trigger a second rollout
+(`kubectl -n kube-system rollout restart deploy/kite`) and confirm the same
+lines appear again — the data survived a restart.
+
+**Tip:** keep a copy of the extracted DB (`/tmp/kite-dev.db`) as a backup.
