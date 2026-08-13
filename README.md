@@ -441,3 +441,23 @@ With `min=1, max=5, target=20%`:
 - **Scale down**: waits ~5 minutes of sustained low CPU before reducing to prevent thrashing
 
 Example: if CPU drops to 5%, it waits ~5 min, then: `2 × (5/20)` = 0.5 → 1 replica.
+
+-- **Keycloack config in kite**: 
+Root cause
+The token exchange fails because kite's server-side Go client cannot verify Caddy's self-signed TLS cert when calling keycloak.local:
+- Keycloak only speaks HTTP on :8080; TLS is terminated at Caddy using its internal (self-signed) CA
+- Kite uses Go's default TLS verification, which rejects that cert
+- I verified from inside the cluster: https://keycloak.local → TLS fails (000); http://keycloak.local:80 → 308-redirects to https → TLS fails
+- Result: kite's ExchangeCodeForToken() POST never reaches keycloak → token_exchange_failed
+- The authorization redirect works because that happens in your browser (you can bypass the cert warning); only kite's server-side calls fail
+The direct HTTP path works fine (verified): http://192.168.121.165:8080/realms/kite/... returns tokens and userinfo without TLS.
+Fix (in the kite UI, no cluster changes)
+Go to kite → Settings → OAuth Providers → edit sarma-idp and set:
+Field	Value
+|Authorization URL	|https://keycloak.local/realms/kite/protocol/openid-connect/auth (leave as-is — browser-facing)|
+|Token URL	        |http://192.168.121.165:8080/realms/kite/protocol/openid-connect/token|
+|User Info URL	    |http://192.168.121.165:8080/realms/kite/protocol/openid-connect/userinfo|
+
+Keep the client id kite / secret kite-client-secret and the redirect URI https://kite.local/api/auth/callback.
+
+**Note**: if your current Token URL uses the old IP 192.168.121.163:8080, that's also dead now — same fix applies (use .165).
