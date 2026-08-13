@@ -54,7 +54,7 @@ spec:
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 5Gi
+                  storage: 20Gi
       service:
         type: LoadBalancer
         port: 9090
