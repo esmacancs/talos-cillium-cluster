@@ -45,6 +45,18 @@ metadata:
   name: kite
   namespace: kube-system
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kite-data
+  namespace: kube-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -68,6 +80,8 @@ spec:
           imagePullPolicy: IfNotPresent
           name: kite
           env:
+            - name: DB_DSN
+              value: /data/db.sqlite
             - name: OIDC_ISSUER_URL
               value: https://keycloak.local/realms/kite
             - name: OIDC_CLIENT_ID
@@ -104,6 +118,13 @@ spec:
           ports:
             - containerPort: 8080
               protocol: TCP
+          volumeMounts:
+            - name: kite-data
+              mountPath: /data
+      volumes:
+        - name: kite-data
+          persistentVolumeClaim:
+            claimName: kite-data
 ---
 apiVersion: v1
 kind: Service
